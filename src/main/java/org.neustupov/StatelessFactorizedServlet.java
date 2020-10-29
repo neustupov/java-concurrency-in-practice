@@ -1,6 +1,7 @@
 package org.neustupov;
 
 import net.jcip.annotations.NotThreadSafe;
+import net.jcip.annotations.ThreadSafe;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -9,16 +10,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
-@NotThreadSafe
+@ThreadSafe
 public class StatelessFactorizedServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1;
 
-    private long count = 0;
+    private final AtomicLong count = new AtomicLong(0);
 
     public long getCount() {
-        return count;
+        return count.get();
     }
 
     @Override
@@ -26,7 +28,7 @@ public class StatelessFactorizedServlet extends HttpServlet {
         System.out.println("StatelessFactorizedServlet doGet() method");
         BigInteger i = extractFromRequest(req);
         BigInteger[] factors = factor(i);
-        ++count;
+        count.incrementAndGet();
         encodeIntoResponse(resp, factors);
     }
 
