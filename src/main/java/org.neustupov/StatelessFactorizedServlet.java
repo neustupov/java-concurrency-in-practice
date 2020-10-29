@@ -25,24 +25,38 @@ public class StatelessFactorizedServlet extends HttpServlet {
     @GuardedBy("this")
     private BigInteger[] lastFactors;
 
-    private final AtomicLong count = new AtomicLong(0);
+    @GuardedBy("this")
+    private long hits;
 
-    public long getCount() {
-        return count.get();
+    @GuardedBy("this")
+    private long cacheHits;
+
+    public synchronized long getHits() {
+        return hits;
+    }
+
+    public synchronized double getCacheHitRatio() {
+        return (double) cacheHits / (double) hits;
     }
 
     @Override
     protected synchronized void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         System.out.println("StatelessFactorizedServlet doGet() method");
         BigInteger i = extractFromRequest(req);
-        if (i.equals(lastNumber)) {
-            encodeIntoResponse(resp, lastFactors);
-        } else {
-            BigInteger[] factors = factor(i);
-            lastNumber = i;
-            lastFactors = factors;
-            count.incrementAndGet();
-            encodeIntoResponse(resp, factors);
+        BigInteger[] factors = null;
+        synchronized (this){
+            ++hits;
+            if(i.equals(lastNumber)){
+                ++cacheHits;
+                factors = lastFactors.clone();
+            }
+        }
+        if(factors == null){
+            factors = factor(i);
+            synchronized (this){
+                lastNumber = i;
+                lastFactors = factors.clone();
+            }
         }
     }
 
