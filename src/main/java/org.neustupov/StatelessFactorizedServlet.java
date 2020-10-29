@@ -11,11 +11,15 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
-@ThreadSafe
+@NotThreadSafe
 public class StatelessFactorizedServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1;
+
+    private final AtomicReference<BigInteger> lastNumber = new AtomicReference<BigInteger>();
+    private final AtomicReference<BigInteger[]> lastFactors = new AtomicReference<BigInteger[]>();
 
     private final AtomicLong count = new AtomicLong(0);
 
@@ -24,12 +28,18 @@ public class StatelessFactorizedServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException{
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         System.out.println("StatelessFactorizedServlet doGet() method");
         BigInteger i = extractFromRequest(req);
-        BigInteger[] factors = factor(i);
-        count.incrementAndGet();
-        encodeIntoResponse(resp, factors);
+        if (i.equals(lastNumber.get())) {
+            encodeIntoResponse(resp, lastFactors.get());
+        } else {
+            BigInteger[] factors = factor(i);
+            lastNumber.set(i);
+            lastFactors.set(factors);
+            count.incrementAndGet();
+            encodeIntoResponse(resp, factors);
+        }
     }
 
     private BigInteger extractFromRequest(ServletRequest request) {
