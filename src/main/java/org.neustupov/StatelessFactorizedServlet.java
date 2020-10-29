@@ -1,5 +1,7 @@
 package org.neustupov;
 
+import net.jcip.annotations.NotThreadSafe;
+
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
@@ -8,6 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigInteger;
 
+@NotThreadSafe
 public class StatelessFactorizedServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1;
