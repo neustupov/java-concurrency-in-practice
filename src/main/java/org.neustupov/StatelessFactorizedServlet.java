@@ -15,11 +15,18 @@ public class StatelessFactorizedServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1;
 
+    private long count = 0;
+
+    public long getCount() {
+        return count;
+    }
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException{
         System.out.println("StatelessFactorizedServlet doGet() method");
         BigInteger i = extractFromRequest(req);
         BigInteger[] factors = factor(i);
+        ++count;
         encodeIntoResponse(resp, factors);
     }
 
