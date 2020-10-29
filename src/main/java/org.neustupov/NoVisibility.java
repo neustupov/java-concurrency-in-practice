@@ -1,5 +1,8 @@
 package org.neustupov;
 
+import net.jcip.annotations.NotThreadSafe;
+
+@NotThreadSafe
 public class NoVisibility {
     private static boolean ready;
     private static int number;
