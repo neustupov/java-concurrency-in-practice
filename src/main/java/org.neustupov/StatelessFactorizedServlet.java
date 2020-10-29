@@ -1,5 +1,6 @@
 package org.neustupov;
 
+import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.NotThreadSafe;
 import net.jcip.annotations.ThreadSafe;
 
@@ -13,13 +14,16 @@ import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-@NotThreadSafe
+@ThreadSafe
 public class StatelessFactorizedServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1;
 
-    private final AtomicReference<BigInteger> lastNumber = new AtomicReference<BigInteger>();
-    private final AtomicReference<BigInteger[]> lastFactors = new AtomicReference<BigInteger[]>();
+    @GuardedBy("this")
+    private BigInteger lastNumber;
+
+    @GuardedBy("this")
+    private BigInteger[] lastFactors;
 
     private final AtomicLong count = new AtomicLong(0);
 
@@ -28,15 +32,15 @@ public class StatelessFactorizedServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    protected synchronized void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         System.out.println("StatelessFactorizedServlet doGet() method");
         BigInteger i = extractFromRequest(req);
-        if (i.equals(lastNumber.get())) {
-            encodeIntoResponse(resp, lastFactors.get());
+        if (i.equals(lastNumber)) {
+            encodeIntoResponse(resp, lastFactors);
         } else {
             BigInteger[] factors = factor(i);
-            lastNumber.set(i);
-            lastFactors.set(factors);
+            lastNumber = i;
+            lastFactors = factors;
             count.incrementAndGet();
             encodeIntoResponse(resp, factors);
         }
