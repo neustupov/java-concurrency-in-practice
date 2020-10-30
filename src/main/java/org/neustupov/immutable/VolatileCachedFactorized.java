@@ -1,7 +1,6 @@
-package org.neustupov;
+package org.neustupov.immutable;
 
 import net.jcip.annotations.GuardedBy;
-import net.jcip.annotations.NotThreadSafe;
 import net.jcip.annotations.ThreadSafe;
 
 import javax.servlet.ServletRequest;
@@ -13,49 +12,22 @@ import java.io.IOException;
 import java.math.BigInteger;
 
 @ThreadSafe
-public class StatelessFactorizedServlet extends HttpServlet {
+public class VolatileCachedFactorized extends HttpServlet {
 
     private static final long serialVersionUID = 1;
 
-    @GuardedBy("this")
-    private BigInteger lastNumber;
-
-    @GuardedBy("this")
-    private BigInteger[] lastFactors;
-
-    @GuardedBy("this")
-    private long hits;
-
-    @GuardedBy("this")
-    private long cacheHits;
-
-    public synchronized long getHits() {
-        return hits;
-    }
-
-    public synchronized double getCacheHitRatio() {
-        return (double) cacheHits / (double) hits;
-    }
+    private volatile OneValueCache cache = new OneValueCache(null, null);
 
     @Override
     protected synchronized void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         System.out.println("StatelessFactorizedServlet doGet() method");
         BigInteger i = extractFromRequest(req);
-        BigInteger[] factors = null;
-        synchronized (this){
-            ++hits;
-            if(i.equals(lastNumber)){
-                ++cacheHits;
-                factors = lastFactors.clone();
-            }
-        }
-        if(factors == null){
+        BigInteger[] factors = cache.getFactors(i);
+        if (factors == null) {
             factors = factor(i);
-            synchronized (this){
-                lastNumber = i;
-                lastFactors = factors.clone();
-            }
+            cache = new OneValueCache(i, factors);
         }
+        encodeIntoResponse(resp, factors);
     }
 
     private BigInteger extractFromRequest(ServletRequest request) {
