@@ -2,24 +2,31 @@ package org.neustupov.memoization;
 
 import net.jcip.annotations.GuardedBy;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.*;
 
 public class Memoizer1<A, V> implements Computable<A, V> {
     @GuardedBy("this")
-    private final Map<A, V> cache = new HashMap<>();
+    private final Map<A, Future<V>> cache = new ConcurrentHashMap<>();
     private final Computable<A, V> c;
 
     public Memoizer1(Computable<A, V> c) {
         this.c = c;
     }
 
-    public synchronized V compute(A arg) throws InterruptedException {
-        V result = cache.get(arg);
-        if (result == null) {
-            result = c.compute(arg);
-            cache.put(arg, result);
+    public V compute(final A arg) throws InterruptedException {
+        Future<V> f = cache.get(arg);
+        if (f == null) {
+            Callable<V> eval = () -> c.compute(arg);
+            FutureTask<V> ft = new FutureTask<>(eval);
+            f = ft;
+            cache.put(arg, ft);
+            ft.run();
         }
-        return result;
+        try {
+            return f.get();
+        } catch (ExecutionException e) {
+            System.out.println("Interrupt");
+        }
     }
 }
