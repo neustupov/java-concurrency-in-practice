@@ -1,8 +1,8 @@
 package org.neustupov;
 
-import net.jcip.annotations.GuardedBy;
-import net.jcip.annotations.NotThreadSafe;
 import net.jcip.annotations.ThreadSafe;
+import org.neustupov.memoization.Computable;
+import org.neustupov.memoization.Memoizer1;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -17,44 +17,16 @@ public class StatelessFactorizedServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1;
 
-    @GuardedBy("this")
-    private BigInteger lastNumber;
-
-    @GuardedBy("this")
-    private BigInteger[] lastFactors;
-
-    @GuardedBy("this")
-    private long hits;
-
-    @GuardedBy("this")
-    private long cacheHits;
-
-    public synchronized long getHits() {
-        return hits;
-    }
-
-    public synchronized double getCacheHitRatio() {
-        return (double) cacheHits / (double) hits;
-    }
+    private final Computable<BigInteger, BigInteger[]> cache = new Memoizer1<>(this::factor);
 
     @Override
     protected synchronized void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         System.out.println("StatelessFactorizedServlet doGet() method");
-        BigInteger i = extractFromRequest(req);
-        BigInteger[] factors = null;
-        synchronized (this){
-            ++hits;
-            if(i.equals(lastNumber)){
-                ++cacheHits;
-                factors = lastFactors.clone();
-            }
-        }
-        if(factors == null){
-            factors = factor(i);
-            synchronized (this){
-                lastNumber = i;
-                lastFactors = factors.clone();
-            }
+        try {
+            BigInteger i = extractFromRequest(req);
+            encodeIntoResponse(resp, cache.compute(i));
+        } catch (InterruptedException e) {
+            System.out.println("Interrupted");
         }
     }
 

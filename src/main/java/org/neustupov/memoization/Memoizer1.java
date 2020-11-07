@@ -2,7 +2,6 @@ package org.neustupov.memoization;
 
 import net.jcip.annotations.GuardedBy;
 
-import java.util.Map;
 import java.util.concurrent.*;
 
 public class Memoizer1<A, V> implements Computable<A, V> {
