@@ -52,65 +52,62 @@ abstract class BackgroundTask<V> implements Runnable, Future<V> {
     }
 
     public void runInBackground(final Runnable task){
-        startButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                class CancelListener implements ActionListener{
-                    BackgroundTask<?> task;
+        startButton.addActionListener(e -> {
+            class CancelListener implements ActionListener{
+                BackgroundTask<?> task;
 
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        if(task != null){
-                            task.cancel(true);
-                        }
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    if(task != null){
+                        task.cancel(true);
                     }
                 }
-                final CancelListener listener = new CancelListener();
-                listener.task = new BackgroundTask<Void>() {
-                    @Override
-                    protected Void compute() {
-                        while (!isCancelled()){
-                            //doSomeWork();
-                        }
-                        return null;
-                    }
-
-                    public void onCompletion(boolean canceled, String s, Throwable exception){
-                        cancelButton.removeActionListener(listener);
-                    }
-
-                    @Override
-                    public void run() {
-
-                    }
-
-                    @Override
-                    public boolean cancel(boolean mayInterruptIfRunning) {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean isCancelled() {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean isDone() {
-                        return false;
-                    }
-
-                    @Override
-                    public Void get() throws InterruptedException, ExecutionException {
-                        return null;
-                    }
-
-                    @Override
-                    public Void get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-                        return null;
-                    }
-                };
-                cancelButton.addActionListener(listener);
             }
+            final CancelListener listener = new CancelListener();
+            listener.task = new BackgroundTask<Void>() {
+                @Override
+                protected Void compute() {
+                    while (!isCancelled()){
+                        //doSomeWork();
+                    }
+                    return null;
+                }
+
+                public void onCompletion(boolean canceled, String s, Throwable exception){
+                    cancelButton.removeActionListener(listener);
+                }
+
+                @Override
+                public void run() {
+
+                }
+
+                @Override
+                public boolean cancel(boolean mayInterruptIfRunning) {
+                    return false;
+                }
+
+                @Override
+                public boolean isCancelled() {
+                    return false;
+                }
+
+                @Override
+                public boolean isDone() {
+                    return false;
+                }
+
+                @Override
+                public Void get() throws InterruptedException, ExecutionException {
+                    return null;
+                }
+
+                @Override
+                public Void get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+                    return null;
+                }
+            };
+            cancelButton.addActionListener(listener);
         });
     }
 }
