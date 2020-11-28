@@ -2,12 +2,11 @@ package org.neustupov.deadlocks;
 
 import net.jcip.annotations.ThreadSafe;
 
-@ThreadSafe
 public class TransferMoney {
 
     private static final Object tieLock = new Object();
 
-    public void transferMoney(final Account fromAcc, final Account toAcc, final DollarAmount amount) throws Exception {
+    public static void transferMoney(final Account fromAcc, final Account toAcc, final DollarAmount amount) throws Exception {
         class Helper {
             public void transfer() throws Exception {
                 if (fromAcc.getBalance().compareTo(amount) < 0) {
