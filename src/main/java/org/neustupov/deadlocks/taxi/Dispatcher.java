@@ -1,10 +1,12 @@
 package org.neustupov.deadlocks.taxi;
 
 import net.jcip.annotations.GuardedBy;
+import net.jcip.annotations.ThreadSafe;
 
 import java.util.HashSet;
 import java.util.Set;
 
+@ThreadSafe
 public class Dispatcher {
 
     @GuardedBy("this")
@@ -22,9 +24,13 @@ public class Dispatcher {
     }
 
     public synchronized Image getImage() {
+        Set<Taxi> copy;
+        synchronized (this) {
+            copy = new HashSet<>(taxis);
+        }
         Image image = new Image();
         for (Taxi t : taxis) {
-            image.drawMarker(t.getlocation());
+            image.drawMarker(t.getLocation());
         }
         return image;
     }

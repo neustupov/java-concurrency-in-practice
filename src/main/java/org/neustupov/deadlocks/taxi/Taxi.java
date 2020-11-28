@@ -1,7 +1,9 @@
 package org.neustupov.deadlocks.taxi;
 
 import net.jcip.annotations.GuardedBy;
+import net.jcip.annotations.ThreadSafe;
 
+@ThreadSafe
 public class Taxi {
     @GuardedBy("this")
     private Point location, destination;
@@ -11,13 +13,17 @@ public class Taxi {
         this.dispatcher = dispatcher;
     }
 
-    public synchronized Point getlocation() {
+    public synchronized Point getLocation() {
         return location;
     }
 
     public synchronized void setLocation(Point location) {
-        this.location = location;
-        if (location.equals(destination)) {
+        boolean reachedDestination;
+        synchronized (this) {
+            this.location = location;
+            reachedDestination = location.equals(destination);
+        }
+        if (reachedDestination) {
             dispatcher.notifyAvailable(this);
         }
     }
