@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class BoundedBufferTest {
 
+    private final static Integer LOCKUP_DETECT_TIMEOUT = 100;
+
     @Test
     void testIsEmptyWhenConstructed() {
         BoundedBuffer<Integer> bb = new BoundedBuffer<>(10);
@@ -20,6 +22,31 @@ class BoundedBufferTest {
         }
         assertTrue(bb.isFull());
         assertFalse(bb.isEmpty());
+    }
+
+    void testTakeBlocksWhenEmpty() {
+        final BoundedBuffer<Integer> bb = new BoundedBuffer<>(10);
+        Thread taker = new Thread(() -> {
+            try {
+                int unused = bb.take();
+                fail();
+            } catch (InterruptedException e) {
+
+            }
+        });
+        try {
+            taker.start();
+            Thread.sleep(LOCKUP_DETECT_TIMEOUT);
+            taker.interrupt();
+            taker.join();
+            assertFalse(taker.isAlive());
+        } catch (Exception unexpected) {
+            fail();
+        }
+    }
+
+    private void fail() {
+        System.out.println("Fail");
     }
 
 }
