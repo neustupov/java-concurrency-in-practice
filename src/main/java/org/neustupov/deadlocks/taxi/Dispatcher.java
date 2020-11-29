@@ -23,7 +23,7 @@ public class Dispatcher {
         availableTaxis.add(taxi);
     }
 
-    public synchronized Image getImage() {
+    public Image getImage() {
         Set<Taxi> copy;
         synchronized (this) {
             copy = new HashSet<>(taxis);
