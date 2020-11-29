@@ -45,8 +45,5 @@ class BoundedBufferTest {
         }
     }
 
-    private void fail() {
-        System.out.println("Fail");
-    }
 
 }
