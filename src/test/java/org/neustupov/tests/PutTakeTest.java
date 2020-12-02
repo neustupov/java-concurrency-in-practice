@@ -18,9 +18,34 @@ public class PutTakeTest {
     private final int nTrials, nPairs;
 
     @Test
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception{
         new PutTakeTest(10, 10, 100000).test();
+        new PutTakeTest(10,10,10).testPoolExpasion();
         pool.shutdown();
+    }
+
+    @Test
+    public void testPoolExpasion() throws InterruptedException {
+        int MAX_SIZE = 10;
+        TestingThreadFactory testingThreadFactory = new TestingThreadFactory();
+        ExecutorService exec = Executors.newFixedThreadPool(MAX_SIZE, testingThreadFactory);
+
+        for(int i = 0; i < 10 * MAX_SIZE; i++){
+            exec.execute(() -> {
+                try{
+                    Thread.sleep(Long.MAX_VALUE);
+                }catch (InterruptedException e){
+                    Thread.currentThread().interrupt();
+                }
+            });
+        }
+
+        for(int i = 0; i < 20 && testingThreadFactory.numCreated.get() < MAX_SIZE; i++){
+            Thread.sleep(100);
+        }
+
+        assertEquals(testingThreadFactory.numCreated.get(), MAX_SIZE);
+        exec.shutdown();
     }
 
     PutTakeTest(int capacity, int npairs, int ntials) {
