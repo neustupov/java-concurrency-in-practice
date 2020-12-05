@@ -2,6 +2,8 @@ package org.neustupov.deadlocks;
 
 import net.jcip.annotations.ThreadSafe;
 
+import java.util.concurrent.TimeUnit;
+
 public class TransferMoney {
 
     private static final Object tieLock = new Object();
@@ -38,6 +40,31 @@ public class TransferMoney {
                     synchronized (toAcc) {
                         new Helper().transfer();
                     }
+                }
+            }
+        }
+    }
+
+    public static boolean transferMoneyWithLocks(Account fromAcc, Account toAcc, DollarAmount amount,
+                                                 long timeuot, TimeUnit unit) {
+        while (true) {
+            if (fromAcc.lock.tryLock()) {
+                try {
+                    if (toAcc.lock.tryLock()) {
+                        try {
+                            if (fromAcc.getBalance().compareTo(amount) < 0) {
+                                throw new RuntimeException();
+                            } else {
+                                fromAcc.debit(amount);
+                                toAcc.credit(amount);
+                                return true;
+                            }
+                        } finally {
+                            toAcc.lock.unlock();
+                        }
+                    }
+                } finally {
+                    fromAcc.lock.unlock();
                 }
             }
         }
