@@ -13,14 +13,29 @@ public class PutTakeTest {
     private static final ExecutorService pool = Executors.newCachedThreadPool();
     private final AtomicInteger putSum = new AtomicInteger(0);
     private final AtomicInteger takeSum = new AtomicInteger(0);
+    private final BarrierTimer timer;
     private final CyclicBarrier barrier;
     private final BoundedBuffer<Integer> bb;
     private final int nTrials, nPairs;
 
     @Test
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) throws Exception {
+        int tpt = 100000;
+        for(int cap = 1; cap <= 1000; cap *= 10){
+            System.out.println("Capacity " + cap);
+            for(int pairs = 1; pairs <= 128; pairs *= 2){
+                PutTakeTest t = new PutTakeTest(cap, pairs, tpt);
+                System.out.println("Pairs: " + pairs);
+                t.test();
+                System.out.println("\t");
+                Thread.sleep(1000);
+                t.test();
+                System.out.println();
+                Thread.sleep(1000);
+            }
+        }
         new PutTakeTest(10, 10, 100000).test();
-        new PutTakeTest(10,10,10).testPoolExpasion();
+        new PutTakeTest(10, 10, 10).testPoolExpasion();
         pool.shutdown();
     }
 
@@ -30,17 +45,17 @@ public class PutTakeTest {
         TestingThreadFactory testingThreadFactory = new TestingThreadFactory();
         ExecutorService exec = Executors.newFixedThreadPool(MAX_SIZE, testingThreadFactory);
 
-        for(int i = 0; i < 10 * MAX_SIZE; i++){
+        for (int i = 0; i < 10 * MAX_SIZE; i++) {
             exec.execute(() -> {
-                try{
+                try {
                     Thread.sleep(Long.MAX_VALUE);
-                }catch (InterruptedException e){
+                } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
             });
         }
 
-        for(int i = 0; i < 20 && testingThreadFactory.numCreated.get() < MAX_SIZE; i++){
+        for (int i = 0; i < 20 && testingThreadFactory.numCreated.get() < MAX_SIZE; i++) {
             Thread.sleep(100);
         }
 
@@ -52,17 +67,21 @@ public class PutTakeTest {
         this.bb = new BoundedBuffer<>(capacity);
         this.nTrials = ntials;
         this.nPairs = npairs;
-        this.barrier = new CyclicBarrier(npairs * 2 + 1);
+        this.timer = new BarrierTimer();
+        this.barrier = new CyclicBarrier(npairs * 2 + 1, timer);
     }
 
     void test() {
         try {
+            timer.clear();
             for (int i = 0; i < nPairs; i++) {
                 pool.execute(new Producer());
                 pool.execute(new Consumer());
             }
             barrier.await();
             barrier.await();
+            long nsPerItem = timer.getTime() / (nPairs * nTrials);
+            System.out.println(nsPerItem);
             assertEquals(putSum.get(), takeSum.get());
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -110,5 +129,28 @@ public class PutTakeTest {
         y ^= (y >>> 21);
         y ^= (y << 7);
         return y;
+    }
+
+    public class BarrierTimer implements Runnable {
+        private boolean started;
+        private long startTime, endTime;
+
+        public synchronized void run() {
+            long t = System.nanoTime();
+            if (!started) {
+                started = true;
+                startTime = t;
+            } else {
+                endTime = t;
+            }
+        }
+
+        public synchronized void clear() {
+            started = false;
+        }
+
+        public synchronized long getTime() {
+            return endTime - startTime;
+        }
     }
 }
